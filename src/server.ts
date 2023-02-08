@@ -1,15 +1,10 @@
 import fastify from 'fastify'
-import { knex } from './database'
 import { env } from './env'
+import { transactionsRoutes } from './routes/transactions'
 
 const server = fastify()
 
-server.get('/hello', async () => {
-  const transaction = await knex('transactions')
-    .select('*')
-    .where('amount', 1000)
-  return transaction
-})
+server.register(transactionsRoutes)
 
 server
   .listen({
