@@ -52,9 +52,12 @@ describe('Transactions routes', () => {
     ])
   })
 })
-async function createNewTransactionAndReturnCookiesAndTransactionResponse() {
+async function createNewTransactionAndReturnCookiesAndTransactionResponse(
+  cookie = [''],
+) {
   const createTransactionResponse = await request(app.server)
     .post('/transactions')
+    .set('Cookie', cookie)
     .send({
       title: 'New transaction',
       amount: 5000,
