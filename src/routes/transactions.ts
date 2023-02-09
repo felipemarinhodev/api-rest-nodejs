@@ -2,34 +2,60 @@ import { randomUUID } from 'crypto'
 import { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { knex } from '../database'
+import { checkSessionIdExists } from '../middlewares/check-session-id-exists'
 /**
  *
  * All routes will begin with /transactions
  * @param server
  */
 export async function transactionsRoutes(server: FastifyInstance) {
-  server.get('/', async () => {
-    const transactions = await knex('transactions').select()
-    return { transactions }
-  })
+  server.get(
+    '/',
+    {
+      preHandler: [checkSessionIdExists],
+    },
+    async (request) => {
+      const { sessionId } = request.cookies
+      const transactions = await knex('transactions')
+        .where('session_id', sessionId)
+        .select()
+      return { transactions }
+    },
+  )
 
-  server.get('/:id', async (request) => {
-    const getTransactionParamsSchema = z.object({
-      id: z.string().uuid(),
-    })
+  server.get(
+    '/:id',
+    {
+      preHandler: [checkSessionIdExists],
+    },
+    async (request) => {
+      const getTransactionParamsSchema = z.object({
+        id: z.string().uuid(),
+      })
+      const { sessionId } = request.cookies
+      const { id } = getTransactionParamsSchema.parse(request.params)
 
-    const { id } = getTransactionParamsSchema.parse(request.params)
+      const transaction = await knex('transactions')
+        .where({ id, session_id: sessionId })
+        .first()
+      return { transaction }
+    },
+  )
 
-    const transaction = await knex('transactions').where('id', id).first()
-    return { transaction }
-  })
-
-  server.get('/summary', async () => {
-    const result = await knex('transactions')
-      .sum('amount', { as: 'amount' })
-      .first()
-    return { transaction: result }
-  })
+  server.get(
+    '/summary',
+    {
+      preHandler: [checkSessionIdExists],
+    },
+    async (request) => {
+      const { sessionId } = request.cookies
+      const result = await knex('transactions')
+        .sum('amount', { as: 'amount' })
+        .where('session_id', sessionId)
+        .first()
+      return { transaction: result }
+    },
+  )
 
   server.post('/', async (request, reply) => {
     const createTransactionBodySchema = z.object({
