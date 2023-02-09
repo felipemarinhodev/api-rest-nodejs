@@ -44,14 +44,38 @@ describe('Transactions routes', () => {
       .set('Cookie', cookies)
       .expect(200)
 
-    expect(listTransactionsResponse.body.transactions).toEqual([
+    const transactionId = listTransactionsResponse.body.transactions[0].id
+    const getTransactionByIdResponse = await request(app.server)
+      .get(`/transactions/${transactionId}`)
+      .set('Cookie', cookies)
+      .expect(200)
+
+    expect(getTransactionByIdResponse.body.transaction).toEqual(
       expect.objectContaining({
         title: 'New transaction',
         amount: 5000,
       }),
-    ])
+    )
+  })
+  it('should be able to get the summary', async () => {
+    const { cookies } =
+      await createNewTransactionAndReturnCookiesAndTransactionResponse()
+
+    await createNewTransactionAndReturnCookiesAndTransactionResponse(cookies)
+
+    const summaryTransactionsResponse = await request(app.server)
+      .get('/transactions/summary')
+      .set('Cookie', cookies)
+      .expect(200)
+
+    expect(summaryTransactionsResponse.body.transaction).toEqual(
+      expect.objectContaining({
+        amount: 10000,
+      }),
+    )
   })
 })
+
 async function createNewTransactionAndReturnCookiesAndTransactionResponse(
   cookie = [''],
 ) {
